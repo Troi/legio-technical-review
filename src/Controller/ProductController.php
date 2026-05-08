@@ -8,22 +8,27 @@ use App\Repository\ProductRepository;
 use App\Service\ProductSerializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Attribute\Cache;
 use Symfony\Component\Routing\Attribute\Route;
 
 class ProductController extends AbstractController
 {
     #[Route('/product/detail/{$id}')]
+    #[Cache(smaxage: 3600, public: true)]
     public function detail(
-        string $id,
+        string            $id,
         ProductRepository $productRepository,
         ProductSerializer $productSerializer
-    ): JsonResponse {
+    ): JsonResponse
+    {
         $product = $productRepository->findProduct($id);
 
         if ($product === null) {
             // depends on system exception handling
             // it could/should be handled by generic Exception handled based on NotFoundException
-            return $this->json(['error' => 'Product not found'], 404);
+            return $this->json(['error' => 'Product not found'], 404)
+                ->setPrivate()
+                ->setMaxAge(0);
         }
 
         return $this->json(
