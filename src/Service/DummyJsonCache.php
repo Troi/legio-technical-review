@@ -7,6 +7,13 @@ namespace App\Service;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
+/**
+ * If I could, I would not implement my own dummy cache, but it was in requirements.
+ * I at least wanted to keep CacheInterface compatibility
+ * to not invent a new interface to later easier replacement.
+ *
+ * I would use built-in mechanisms of Symphony over the HTTP / Controller layer.
+ */
 class DummyJsonCache implements CacheInterface
 {
     private string $cacheDir;
