@@ -41,11 +41,11 @@ class ProductRepository
             // log bad elastic data
         } catch (TimeoutException) {
             // log elastic timeout,
-        } finally {
-            $this->productQueryCounter->logQuery($id, DatasourceType::MYSQL);
-            return $this->productHydrator->hydrateDatabaseData(
-                $this->mySQLDriver->findProduct($id)
-            );
         }
+
+        $this->productQueryCounter->logQuery($id, DatasourceType::MYSQL);
+        return $this->productHydrator->hydrateDatabaseData(
+            $this->mySQLDriver->findProduct($id)
+        );
     }
 }
