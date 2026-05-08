@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Enum\DatasourceType;
 use App\Model\Product;
 use App\Service\IElasticSearchDriver;
 use App\Service\IMySQLDriver;
+use App\Service\IQueryCounter;
 use App\Service\ProductHydrator;
 use Symfony\Component\HttpClient\Exception\TimeoutException;
 
@@ -16,7 +18,8 @@ class ProductRepository
     public function __construct(
         private ProductHydrator $productHydrator,
         private IElasticSearchDriver $elasticSearchDriver,
-        private IMySQLDriver $mySQLDriver
+        private IMySQLDriver $mySQLDriver,
+        private IQueryCounter $productQueryCounter
     )
     {
     }
@@ -30,6 +33,7 @@ class ProductRepository
     public function findProduct(string $id): ?Product
     {
         try {
+            $this->productQueryCounter->logQuery($id, DatasourceType::ELASTICSEARCH);
             return $this->productHydrator->hydrateElasticData(
                 $this->elasticSearchDriver->findById($id)
             );
@@ -38,6 +42,7 @@ class ProductRepository
         } catch (TimeoutException) {
             // log elastic timeout,
         } finally {
+            $this->productQueryCounter->logQuery($id, DatasourceType::MYSQL);
             return $this->productHydrator->hydrateDatabaseData(
                 $this->mySQLDriver->findProduct($id)
             );
