@@ -25,8 +25,12 @@ services:
             - '../src/Model/*'
             - '../src/Service/SimpleTextQueryCounter.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Service\DummyJsonCache:
+        arguments:
+            $cacheDir: '%kernel.project_dir%/var/share/temp_cache'
+
+    # will be replaced by Redis or other more useful cache
+    Symfony\Contracts\Cache\CacheInterface: '@App\Service\DummyJsonCache'
 
     productQueryCounter:
         class: App\Service\SimpleTextQueryCounter

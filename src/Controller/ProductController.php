@@ -10,7 +10,8 @@ use App\Service\IQueryCounter;
 use App\Service\ProductSerializer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpKernel\Attribute\Cache;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 class ProductController extends AbstractController
@@ -23,17 +24,28 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product/detail/{$id}')]
-    #[Cache(smaxage: 3600, public: true)]
     public function detail(
         string            $id,
         ProductRepository $productRepository,
-        ProductSerializer $productSerializer
+        ProductSerializer $productSerializer,
+        CacheInterface    $cache,
     ): JsonResponse
     {
         $this->productQueryCounter->logQuery($id, DatasourceType::HTTP);
-        $product = $productRepository->findProduct($id);
 
-        if ($product === null) {
+        $productData = $cache->get('product_detail_' . $id, function (ItemInterface $item) use ($id, $productRepository, $productSerializer) {
+            $product = $productRepository->findProduct($id);
+
+            if ($product === null) {
+                // I don't want to cache 404 results
+                $item->expiresAfter(-1);
+                return null;
+            }
+
+            return $productSerializer->getCustomerData($product);
+        });
+
+        if ($productData === null) {
             // depends on system exception handling
             // it could/should be handled by generic Exception handled based on NotFoundException
             return $this->json(['error' => 'Product not found'], 404)
@@ -41,8 +53,6 @@ class ProductController extends AbstractController
                 ->setMaxAge(0);
         }
 
-        return $this->json(
-            $productSerializer->getCustomerData($product)
-        );
+        return $this->json($productData);
     }
 }
